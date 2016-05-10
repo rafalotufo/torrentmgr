@@ -1,32 +1,46 @@
 #!/usr/bin/env python
 
+import sys
 import argparse
 import rssmsg
 import qbittorrentclient
 import time
 
+import logging
+import logging.handlers
 
 def main(url, filename, update_every_s, web_api_url, username, password):
 
+    my_logger = logging.getLogger('TorrentMgr')
+    my_logger.setLevel(logging.INFO)
+
+    if sys.platform == "darwin":
+        # Apple made 10.5 more secure by disabling network syslog:
+        address = "/var/run/syslog"
+    else:
+        address = ('localhost', 514)
+
+    handler = logging.handlers.SysLogHandler(address=address)
+
+    my_logger.addHandler(handler)
+
     def update():
-        print 'updating...'
+        my_logger.info('updating...')
         new = rss_mgr.update()
-        print 'found %s new items' % new
+        my_logger.info('found %s new items' % new)
         urls = [i['url'] for i in new.itervalues()]
         if urls:
-            print 'downloading %s' % ' '.join(urls)
+            my_logger.info('downloading %s' % ' '.join(urls))
             client.add_torrent(urls)
 
     def run():
-        exit_app = False
         try:
             update()
-            while not exit_app:
+            while True:
                 time.sleep(update_every_s)
                 update()
-        except KeyboardInterrupt:
-            print 'interrupt!'
-            exit_app = True
+        except Exception as e:
+            my_logger.critical(e)
 
     client = qbittorrentclient.QbittorrentClient(web_api_url)
     client.login(username, password)
