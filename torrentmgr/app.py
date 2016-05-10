@@ -27,7 +27,7 @@ def main(url, filename, update_every_s, web_api_url, username, password):
     def update():
         my_logger.info('updating...')
         new = rss_mgr.update()
-        my_logger.info('found %s new items' % new)
+        my_logger.info('found %s new items')
         urls = [i['url'] for i in new.itervalues()]
         if urls:
             my_logger.info('downloading %s' % ' '.join(urls))
