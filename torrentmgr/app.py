@@ -30,7 +30,7 @@ def main(url, filename, update_every_s, web_api_url, username, password):
         my_logger.info('found %s new items')
         urls = [i['url'] for i in new.itervalues()]
         if urls:
-            my_logger.info('downloading %s' % ' '.join(urls))
+            my_logger.info('downloading %s torrents' % len(urls))
             client.add_torrent(urls)
 
     def run():
