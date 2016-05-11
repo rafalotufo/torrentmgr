@@ -3,6 +3,7 @@ import untangle
 import os.path
 import json
 
+
 def list_shows_rss(url):
     xml = requests.get(url)
     root = untangle.parse(xml.text)
@@ -13,9 +14,11 @@ def list_shows_rss(url):
         title = item.title.cdata
         yield {'guid': guid, 'url': url, 'title': title}
 
+
 def save_file(filename, items):
     with open(filename, 'w') as f:
         json.dump(items, f, sort_keys=True, indent=2)
+
 
 def read_file(filename):
     if not os.path.exists(filename):
@@ -23,6 +26,7 @@ def read_file(filename):
     else:
         with open(filename) as f:
             return json.load(f)
+
 
 class RssMgr(object):
 
@@ -56,7 +60,8 @@ class RssMgr(object):
         self.items = latest_items
         return new_items
 
-def buildShowsRssMgr(url, filename):
+
+def build_shows_rss_mgr(url, filename):
     return RssMgr(
         lambda: list_shows_rss(url),
         lambda items: save_file(filename, items),
