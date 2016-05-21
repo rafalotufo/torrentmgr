@@ -39,7 +39,9 @@ class QbittorrentClient(object):
             r.raise_for_status()
 
     def add_torrent(self, urls):
-        return self.s.post(self.mkurl('/command/download'), {'urls': urls})
+        return self.s.post(self.mkurl('/command/download'), {
+            'urls': '\n'.join(urls)
+        })
 
 if __name__ == '__main__':
     import json
