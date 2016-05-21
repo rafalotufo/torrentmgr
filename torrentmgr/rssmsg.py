@@ -2,6 +2,7 @@ import requests
 import untangle
 import os.path
 import json
+import re
 
 
 def list_shows_rss(url):
@@ -30,16 +31,24 @@ def read_file(filename):
 
 class RssMgr(object):
 
-    def __init__(self, list_shows, save_file, read_file):
+    def __init__(self, list_shows, save_file, read_file, should_contain):
         self.list_shows = list_shows
         self.save_file = save_file
         self.read_file = read_file
         self.items = self.read_file()
+        self.should_contain = should_contain
+
+    def matches_condition(self, item, should_contain):
+        return re.search(should_contain, item['title'])
 
     def fetch_latest(self):
         items = {}
         for item in self.list_shows():
-            items[item['guid']] = item
+            if self.should_contain:
+                if self.matches_condition(item, self.should_contain):
+                    items[item['guid']] = item
+            else:
+                items[item['guid']] = item
 
         return items
 
@@ -61,8 +70,9 @@ class RssMgr(object):
         return new_items
 
 
-def build_shows_rss_mgr(url, filename):
+def build_shows_rss_mgr(url, should_contain, filename):
     return RssMgr(
         lambda: list_shows_rss(url),
         lambda items: save_file(filename, items),
-        lambda: read_file(filename))
+        lambda: read_file(filename),
+        should_contain)

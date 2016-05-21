@@ -5,14 +5,16 @@ import argparse
 import rssmsg
 import qbittorrentclient
 import time
+import os
+import json
 
 import logging
 import logging.handlers
 
 
-def run(rss_mgr, client, username, password, update_every_s, my_logger):
+def run(feeds, feed_directory, client, username, password, update_every_s, my_logger):
 
-    def update():
+    def update(rss_mgr):
         my_logger.info('updating...')
         new = rss_mgr.update()
         my_logger.info('found %s new items' % len(new))
@@ -28,10 +30,15 @@ def run(rss_mgr, client, username, password, update_every_s, my_logger):
             except:
                 my_logger.exception('Error logging in to bittorrent client')
 
-    update()
+    def update_all():
+        rss_mgrs = list(build_rss_mgrs(feeds, feed_directory))
+        for rss_mgr in rss_mgrs:
+            update(rss_mgr)
+
+    update_all()
     while True:
         time.sleep(update_every_s)
-        update()
+        update_all()
 
 
 def get_logger():
@@ -49,23 +56,35 @@ def get_logger():
     return my_logger
 
 
-def main(url, filename, update_every_s, web_api_url, username, password):
+def get_feed_uris(feeds):
+    with open(feeds) as f:
+        return json.load(f)
+
+
+def build_rss_mgrs(feeds, feed_directory):
+    feed_uris = get_feed_uris(feeds)
+    if not os.path.exists(feed_directory):
+        os.mkdir(feed_directory)
+    for feed_id, feed_uri in feed_uris.items():
+        filename = os.path.join(feed_directory, feed_id) + '.json'
+        yield rssmsg.build_shows_rss_mgr(
+            feed_uri['uri'], feed_uri.get('should_contain', None), filename)
+
+
+def main(feeds, feed_directory, update_every_s, web_api_url, username, password):
 
     my_logger = get_logger()
     client = qbittorrentclient.QbittorrentClient(web_api_url)
-    rss_mgr = rssmsg.build_shows_rss_mgr(url, filename)
-    run(rss_mgr, client, username, password, update_every_s, my_logger)
+    run(feeds, feed_directory, client, username, password, update_every_s, my_logger)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--url',
-        default='http://showrss.info/user/22730.rss?magnets=true&namespaces=true&name=clean&quality=null&re=null')
-    parser.add_argument('--filename', default='.rssmgr.json')
+    parser.add_argument('--feeds', default="feeds.json")
+    parser.add_argument('--feed-directory', default='.rssmgr')
     parser.add_argument('--web-api-url', default='http://192.168.1.199:8085')
     parser.add_argument('--username', default='rlotufo')
     parser.add_argument('--password', default='baleieza')
     parser.add_argument('-s', default=5 * 60, type=int)
     args = parser.parse_args()
 
-    main(args.url, args.filename, args.s, args.web_api_url, args.username, args.password)
+    main(args.feeds, args.feed_directory, args.s, args.web_api_url, args.username, args.password)
