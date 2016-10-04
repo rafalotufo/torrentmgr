@@ -4,6 +4,9 @@ import os.path
 import json
 import re
 
+import sys
+reload(sys) # just to be sure
+sys.setdefaultencoding('utf-8')
 
 def list_shows_rss(url):
     xml = requests.get(url)
